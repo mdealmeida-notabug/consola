@@ -343,8 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (offset !== null) player.seekTo(offset, true);
                         if (state === 5 || state === 2 || state === 1 || state === -1) {
                             player.playVideo();
-                        } else {
-                            setTimeout(tryPlay, 300);
+                        } else if (state !== 3) { // 3 is buffering
+                            setTimeout(tryPlay, 50); // Reduced delay for faster response
                         }
                     };
                     tryPlay();
@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Loader functions
-        function loadYouTube(url, slotIndex = activeSlotIndex) {
+        function loadYouTube(url, slotIndex = activeSlotIndex, startTime = null) {
             const videoId = extractVideoId(url);
             if (!videoId) return;
             const thumb = `url(https://img.youtube.com/vi/${videoId}/hqdefault.jpg)`;
@@ -445,8 +445,15 @@ document.addEventListener('DOMContentLoaded', () => {
             currentMode = 'youtube';
             const initPlayer = () => {
                 getOrCreateYTPlayer(deckId, (player) => {
-                    player.cueVideoById(videoId);
-                    player.setVolume(volSlider.value);
+                    if (startTime !== null) {
+                        player.loadVideoById({
+                            videoId: videoId,
+                            startSeconds: startTime
+                        });
+                    } else {
+                        player.cueVideoById(videoId);
+                    }
+                    player.setVolume(volSlider.value * 100);
                     playBtn.classList.add('ready');
                 });
             };
@@ -511,10 +518,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
 
                     if (cue.slot !== activeSlotIndex) {
-                        // Switch slot first
-                        loadYouTube(deckSlots[cue.slot], cue.slot);
-                        // Give it a moment to load
-                        setTimeout(jumpToCue, 500);
+                        // Switch slot AND jump to time instantly using loadVideoById logic
+                        isPlaying = true;
+                        platter.classList.add('spinning');
+                        playBtn.classList.add('active');
+                        playBtn.textContent = 'STOP';
+                        updateVU();
+                        loadYouTube(deckSlots[cue.slot], cue.slot, cue.time);
                     } else {
                         jumpToCue();
                     }
