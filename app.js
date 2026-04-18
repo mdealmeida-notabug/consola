@@ -276,7 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
             applyVolume();
         });
 
-        const hotCues = new Array(8).fill(null);
+        const STORAGE_KEY_CUES = `dj_cues_${deckId}`;
+        const hotCues = JSON.parse(localStorage.getItem(STORAGE_KEY_CUES)) || new Array(8).fill(null).map(() => ({ cue: null, segment: null }));
+
+        function saveCues() {
+            localStorage.setItem(STORAGE_KEY_CUES, JSON.stringify(hotCues));
+        }
         // Position tracking for Web Audio
         let playbackStartCtxTime = 0; // audioContext.currentTime when play started
         let playbackStartOffset = 0;  // buffer position when play started
@@ -484,27 +489,43 @@ document.addEventListener('DOMContentLoaded', () => {
             loadYouTube(deckSlots[activeSlotIndex], activeSlotIndex);
         }
 
-        // ─── HOT CUE PADS ────────────────────────────────────────────
-        const cuePads = document.querySelectorAll(`#deck-${deckId} .cue-pad`);
-        cuePads.forEach(pad => {
-            pad.addEventListener('click', () => {
-                if (currentMode === 'none') return; // nothing loaded
-                const index = parseInt(pad.dataset.pad);
-                if (hotCues[index] === null) {
-                    // FIRST CLICK: record current position + slot
-                    hotCues[index] = {
-                        slot: activeSlotIndex,
-                        time: getCurrentPosition()
-                    };
-                    pad.style.background = 'var(--accent-color)';
-                    pad.style.color = '#fff';
-                    pad.style.borderColor = 'var(--accent-color)';
-                    pad.style.boxShadow = '0 0 12px var(--accent-color)';
+        // ─── HOT CUE PADS (SPLIT LOGIC) ───────────────────────────────────
+        const cuePadContainers = document.querySelectorAll(`#deck-${deckId} .cue-pad-container`);
+        
+        // Timer for detecting "hold" vs "click" on segment side
+        let segmentRecordStart = 0;
+        let segmentMonitorId = null;
+
+        cuePadContainers.forEach(container => {
+            const index = parseInt(container.dataset.pad);
+            const leftHalf = container.querySelector('.left-half');
+            const rightHalf = container.querySelector('.right-half');
+
+            // Sync initial UI state from saved cues
+            const updatePadUI = () => {
+                const data = hotCues[index];
+                if (data.cue) leftHalf.classList.add('active');
+                else leftHalf.classList.remove('active');
+                
+                if (data.segment) rightHalf.classList.add('active');
+                else rightHalf.classList.remove('active');
+            };
+            updatePadUI();
+
+            // LEFT HALF: Standard Hot Cue
+            leftHalf.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentMode === 'none') return;
+                
+                if (!hotCues[index].cue) {
+                    // Record cue
+                    hotCues[index].cue = { slot: activeSlotIndex, time: getCurrentPosition() };
+                    saveCues();
+                    updatePadUI();
                 } else {
-                    // SECOND CLICK: jump to saved position
-                    const cue = hotCues[index];
-                    
-                    const jumpToCue = () => {
+                    // Jump to cue
+                    const cue = hotCues[index].cue;
+                    const performJump = () => {
                         if (isPlaying) {
                             startPlayback(cue.time);
                         } else {
@@ -518,31 +539,88 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
 
                     if (cue.slot !== activeSlotIndex) {
-                        // Switch slot AND jump to time instantly using loadVideoById logic
-                        isPlaying = true;
-                        platter.classList.add('spinning');
-                        playBtn.classList.add('active');
-                        playBtn.textContent = 'STOP';
-                        updateVU();
                         loadYouTube(deckSlots[cue.slot], cue.slot, cue.time);
                     } else {
-                        jumpToCue();
+                        performJump();
                     }
-                    // Flash the pad
-                    pad.style.filter = 'brightness(1.5)';
-                    setTimeout(() => pad.style.filter = '', 150);
                 }
             });
 
-            // Right-click to clear a cue point
-            pad.addEventListener('contextmenu', (e) => {
+            // RIGHT HALF: Segment Recorder (Hold to record, Click to play)
+            rightHalf.addEventListener('mousedown', (e) => {
+                if (currentMode === 'none') return;
+                segmentRecordStart = Date.now();
+                // We'll mark the possible start time if we begin recording
+                this._tempStartTime = getCurrentPosition();
+                
+                // Visual feedback for recording
+                this._recordTimeout = setTimeout(() => {
+                    rightHalf.classList.add('recording');
+                }, 200);
+            });
+
+            rightHalf.addEventListener('mouseup', (e) => {
+                if (currentMode === 'none') return;
+                clearTimeout(this._recordTimeout);
+                const holdDuration = Date.now() - segmentRecordStart;
+                const wasRecording = rightHalf.classList.contains('recording');
+                rightHalf.classList.remove('recording');
+
+                if (holdDuration > 300) {
+                    // RECORD SEGMENT
+                    const endTime = getCurrentPosition();
+                    hotCues[index].segment = {
+                        slot: activeSlotIndex,
+                        start: this._tempStartTime,
+                        end: endTime
+                    };
+                    saveCues();
+                    updatePadUI();
+                } else {
+                    // PLAY SEGMENT (if exists)
+                    const seg = hotCues[index].segment;
+                    if (seg) {
+                        const playSeg = () => {
+                            isPlaying = true;
+                            platter.classList.add('spinning');
+                            playBtn.classList.add('active');
+                            playBtn.textContent = 'STOP';
+                            updateVU();
+                            startPlayback(seg.start);
+                            
+                            // Monitor for auto-stop
+                            if (segmentMonitorId) clearInterval(segmentMonitorId);
+                            segmentMonitorId = setInterval(() => {
+                                if (getCurrentPosition() >= seg.end) {
+                                    playBtn.click(); // Stop
+                                    clearInterval(segmentMonitorId);
+                                }
+                            }, 50);
+                        };
+
+                        if (seg.slot !== activeSlotIndex) {
+                            loadYouTube(deckSlots[seg.slot], seg.slot, seg.start);
+                            // Monitor logic for switched track
+                            if (segmentMonitorId) clearInterval(segmentMonitorId);
+                            segmentMonitorId = setInterval(() => {
+                                if (getCurrentPosition() >= seg.end) {
+                                    playBtn.click();
+                                    clearInterval(segmentMonitorId);
+                                }
+                            }, 50);
+                        } else {
+                            playSeg();
+                        }
+                    }
+                }
+            });
+
+            // Clear on Right Click
+            container.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
-                const index = parseInt(pad.dataset.pad);
-                hotCues[index] = null;
-                pad.style.background = '';
-                pad.style.color = '';
-                pad.style.borderColor = '';
-                pad.style.boxShadow = '';
+                hotCues[index] = { cue: null, segment: null };
+                saveCues();
+                updatePadUI();
             });
         });
 

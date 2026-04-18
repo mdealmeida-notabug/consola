@@ -489,41 +489,92 @@ input[type=range].vertical-slider {
     z-index: 2;
 }
 
-/* ─── HOT CUE PADS ──────────────────────────────── */
+/* ─── HOT CUES ──────────────────────── */
 .hot-cues {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    width: 100%;
-    margin: 10px 0;
+    gap: 8px;
+    margin-top: 15px;
 }
 
-.cue-pad {
-    background: #1c1c1c;
+.cue-pad-container {
+    position: relative;
+    height: 44px;
+    background: #111;
     border: 1px solid #333;
     border-radius: 4px;
-    height: 36px;
+    display: flex;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s;
+    user-select: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.cue-pad-container:active {
+    transform: scale(0.96);
+}
+
+.cue-half {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    font-size: 11px;
+    font-weight: 900;
+    transition: all 0.2s;
+    opacity: 0.5;
+    color: #555;
     font-family: 'Orbitron', sans-serif;
 }
 
-.cue-pad:hover {
-    background: #292929;
-    color: var(--accent-color);
-    border-color: var(--accent-color);
-    box-shadow: 0 0 8px rgba(255, 60, 60, 0.3);
+.left-half {
+    background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
+    border-right: 1px solid #000;
 }
 
-.cue-pad:active {
+.right-half {
+    background: linear-gradient(to bottom, #222, #111);
+}
+
+.left-half.active {
     background: var(--accent-color);
-    color: #fff;
-    box-shadow: 0 0 15px var(--accent-color);
+    box-shadow: inset 0 0 12px rgba(255,255,255,0.4);
+    opacity: 1;
+    color: white;
+}
+
+.right-half.active {
+    background: #0077ff; 
+    box-shadow: inset 0 0 12px rgba(255,255,255,0.4);
+    opacity: 1;
+    color: white;
+}
+
+.right-half.recording {
+    background: #ff0000;
+    animation: flash_red 0.4s infinite alternate;
+    opacity: 1;
+    color: white;
+}
+
+.pad-num {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #888;
+    pointer-events: none;
+    background: rgba(0,0,0,0.6);
+    padding: 0 3px;
+    border-radius: 2px;
+    z-index: 5;
+}
+
+@keyframes flash_red {
+    from { background: #ff0000; }
+    to { background: #660000; }
 }
 
 /* ─── PITCH CONTAINER ───────────────────────────── */
