@@ -254,6 +254,36 @@
         </div>
     </div>
 
+    <!-- Cookie/Premium Modal -->
+    <div id="cookie-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <h2 style="font-family: 'Orbitron', sans-serif; color: var(--accent-color); margin-bottom: 15px;">SESIÓN PREMIUM Y COOKIES</h2>
+            <p style="font-size: 0.9rem; margin-bottom: 20px; color: #ccc; line-height: 1.5;">
+                Para que la consola reconozca tu cuenta de <strong>YouTube Premium</strong> y elimine la publicidad, debes permitir las cookies de terceros y sincronizar tu sesión.
+            </p>
+            <div style="text-align: left; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.8rem;">
+                <ol style="padding-left: 20px; color: #aaa;">
+                    <li style="margin-bottom: 8px;">Presiona el botón <strong>"Sincronizar Sesión"</strong> abajo.</li>
+                    <li style="margin-bottom: 8px;">Se abrirá una ventana pequeña de YouTube para conectar tu cuenta.</li>
+                    <li style="margin-bottom: 8px;">Si sigues viendo anuncios, asegúrate de que tu navegador no esté bloqueando <strong>"Cookies de terceros"</strong>.</li>
+                </ol>
+            </div>
+            <button id="btn-sync-session" class="btn-slot-sel" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">SINCRONIZAR SESIÓN</button>
+            <button id="btn-close-cookie" class="btn-fade" style="margin-top: 10px; color: #666; font-size: 0.7rem; border: none; background: transparent; cursor: pointer;">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner">
+        <div class="cookie-text">
+            <span>🍪</span> Esta consola utiliza cookies de YouTube para habilitar funciones Premium.
+        </div>
+        <div class="cookie-actions">
+            <button id="cookie-info" style="background: transparent; border: 1px solid #444; color: #aaa; margin-right: 10px; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Saber más</button>
+            <button id="cookie-accept" style="background: var(--accent-color); border: none; color: white; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.7rem;">ACEPTAR</button>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

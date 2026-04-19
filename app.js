@@ -788,5 +788,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = Math.floor(secs % 60);
         return `${m}:${s.toString().padStart(2, '0')}`;
     }
+
+    // ─── COOKIE & PREMIUM SESSION LOGIC ─────────────────────────────
+    const cookieBanner = document.getElementById('cookie-banner');
+    const cookieAccept = document.getElementById('cookie-accept');
+    const cookieInfo = document.getElementById('cookie-info');
+    const cookieModal = document.getElementById('cookie-modal');
+    const btnSyncSession = document.getElementById('btn-sync-session');
+    const btnCloseCookie = document.getElementById('btn-close-cookie');
+
+    if (!localStorage.getItem('dj_cookie_accepted')) {
+        setTimeout(() => {
+            cookieBanner.style.display = 'flex';
+        }, 2000);
+    }
+
+    cookieAccept.onclick = () => {
+        localStorage.setItem('dj_cookie_accepted', 'true');
+        cookieBanner.style.display = 'none';
+        // Auto-show modal on first accept to help with Premium
+        cookieModal.style.display = 'block';
+    };
+
+    cookieInfo.onclick = () => {
+        cookieModal.style.display = 'block';
+    };
+
+    btnCloseCookie.onclick = () => {
+        cookieModal.style.display = 'none';
+    };
+
+    btnSyncSession.onclick = () => {
+        const width = 500, height = 600;
+        const left = (window.innerWidth / 2) - (width / 2);
+        const top = (window.innerHeight / 2) - (height / 2);
+        
+        // Open YouTube in a popup to refresh session cookies
+        const win = window.open('https://www.youtube.com', 'yt-sync', 
+            `width=${width},height=${height},left=${left},top=${top},menubar=no,status=no,toolbar=no`);
+        
+        btnSyncSession.textContent = 'SINCRONIZANDO...';
+        btnSyncSession.style.background = '#444';
+        
+        setTimeout(() => {
+            if (win) win.close();
+            btnSyncSession.textContent = '¡SESIÓN SINCRONIZADA!';
+            btnSyncSession.style.background = '#00ffcc';
+            btnSyncSession.style.color = '#000';
+            
+            setTimeout(() => {
+                cookieModal.style.display = 'none';
+                location.reload(); // Reload to apply cookies to iframes
+            }, 1000);
+        }, 3000);
+    };
+
+    // Close cookie modal on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === cookieModal) cookieModal.style.display = 'none';
+    });
 });
 
