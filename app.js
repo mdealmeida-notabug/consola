@@ -678,13 +678,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 playBtn.classList.add('active');
                 playBtn.textContent = 'STOP';
                 updateVU();
-            } else {
-                // NORMAL CUE BEHAVIOR (Momentary / Jump)
-                if (!activeLoop) {
-                    // Logic for a brief tap on CUE: Return to start or recorded point?
-                    // For now, let's keep it simple: if not looping, just visual flash.
-                }
             }
+        });
+
+        // Click again to STOP loop if active
+        cueBtn.addEventListener('click', () => {
+            if (activeLoop) {
+                clearInterval(cueLoopInterval);
+                activeLoop = null;
+                cueBtn.classList.remove('looping');
+            }
+        });
+
+        // RIGHT CLICK TO CLEAR LOOP COMPLETELY
+        cueBtn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (cueLoopInterval) clearInterval(cueLoopInterval);
+            activeLoop = null;
+            cueBtn.classList.remove('looping');
+            cueBtn.style.boxShadow = '';
         });
 
         function setMasterVolume(level) {
@@ -852,6 +864,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const cookieModal = document.getElementById('cookie-modal');
     const btnSyncSession = document.getElementById('btn-sync-session');
     const btnCloseCookie = document.getElementById('btn-close-cookie');
+    const btnOpenPremiumMixer = document.getElementById('btn-open-premium-mixer');
+
+    if (btnOpenPremiumMixer) {
+        btnOpenPremiumMixer.onclick = () => {
+            cookieModal.style.display = 'block';
+        };
+    }
 
     // Key changed to _v2 to force show one time for all users
     if (!localStorage.getItem('dj_cookie_accepted_v2')) {
