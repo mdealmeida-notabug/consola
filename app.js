@@ -203,7 +203,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(container);
         players[deckId] = new YT.Player(`yt-player-${deckId}`, {
             height: '1', width: '1',
-            playerVars: { 'autoplay': 0, 'controls': 0 },
+            host: 'https://www.youtube.com',
+            playerVars: { 
+                'autoplay': 0, 
+                'controls': 0,
+                'origin': window.location.origin,
+                'enablejsapi': 1,
+                'widget_referrer': window.location.href
+            },
             events: { 
                 'onReady': () => onReady(players[deckId]),
                 'onError': (e) => {
