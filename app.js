@@ -240,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pbBar    = document.getElementById(`playback-bar-${deckId}`);
         const pbElapsed = document.getElementById(`pb-elapsed-${deckId}`);
         const pbTotal   = document.getElementById(`pb-total-${deckId}`);
+        const cueBtn    = document.getElementById(`cue-${deckId}`);
         const STORAGE_KEY_SLOTS = `dj_slots_${deckId}`;
         const STORAGE_KEY_ACTIVE_SLOT = `dj_active_slot_${deckId}`;
         const STORAGE_KEY_MODE  = `dj_mode_${deckId}`;
@@ -631,6 +632,61 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // ─── MAIN CUE BUTTON (LOOP RECORDER) ──────────────────────────
+        let cueRecordStart = 0;
+        let cueLoopInterval = null;
+        let activeLoop = null;
+
+        cueBtn.addEventListener('mousedown', () => {
+            if (currentMode === 'none') return;
+            
+            if (activeLoop) {
+                // Clicking briefly while looping stops the loop
+                clearInterval(cueLoopInterval);
+                activeLoop = null;
+                cueBtn.classList.remove('looping');
+                return;
+            }
+
+            cueRecordStart = Date.now();
+            this._cueStartTime = getCurrentPosition();
+            cueBtn.style.boxShadow = '0 0 20px #ff0';
+        });
+
+        cueBtn.addEventListener('mouseup', () => {
+            if (currentMode === 'none') return;
+            cueBtn.style.boxShadow = '';
+            
+            const holdDuration = Date.now() - cueRecordStart;
+            if (holdDuration > 300) {
+                // RECORD & START LOOP
+                const endTime = getCurrentPosition();
+                activeLoop = { start: this._cueStartTime, end: endTime };
+                cueBtn.classList.add('looping');
+                
+                if (cueLoopInterval) clearInterval(cueLoopInterval);
+                cueLoopInterval = setInterval(() => {
+                    if (getCurrentPosition() >= activeLoop.end) {
+                        startPlayback(activeLoop.start);
+                    }
+                }, 50);
+
+                // Initial jump to start of loop
+                startPlayback(activeLoop.start);
+                isPlaying = true;
+                platter.classList.add('spinning');
+                playBtn.classList.add('active');
+                playBtn.textContent = 'STOP';
+                updateVU();
+            } else {
+                // NORMAL CUE BEHAVIOR (Momentary / Jump)
+                if (!activeLoop) {
+                    // Logic for a brief tap on CUE: Return to start or recorded point?
+                    // For now, let's keep it simple: if not looping, just visual flash.
+                }
+            }
+        });
+
         function setMasterVolume(level) {
             crossfaderLevel = level; // 0.0 to 1.0
             applyVolume();
@@ -797,18 +853,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSyncSession = document.getElementById('btn-sync-session');
     const btnCloseCookie = document.getElementById('btn-close-cookie');
 
-    if (!localStorage.getItem('dj_cookie_accepted')) {
+    // Key changed to _v2 to force show one time for all users
+    if (!localStorage.getItem('dj_cookie_accepted_v2')) {
         setTimeout(() => {
-            cookieBanner.style.display = 'flex';
-        }, 2000);
+            if (cookieBanner) {
+                cookieBanner.style.display = 'flex';
+                console.log('Cookie banner shown');
+            }
+        }, 3000);
     }
 
-    cookieAccept.onclick = () => {
-        localStorage.setItem('dj_cookie_accepted', 'true');
-        cookieBanner.style.display = 'none';
-        // Auto-show modal on first accept to help with Premium
-        cookieModal.style.display = 'block';
-    };
+    if (cookieAccept) {
+        cookieAccept.onclick = () => {
+            localStorage.setItem('dj_cookie_accepted_v2', 'true');
+            if (cookieBanner) cookieBanner.style.display = 'none';
+            if (cookieModal) cookieModal.style.display = 'block';
+        };
+    }
 
     cookieInfo.onclick = () => {
         cookieModal.style.display = 'block';
